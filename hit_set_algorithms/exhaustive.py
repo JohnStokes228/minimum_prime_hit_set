@@ -1,97 +1,258 @@
 """
 Complete pipeline for exhaustive solution to minimum hit set problem
 
-TODO - update current solution as its pretty shit
-     - i guess a bunch else but yeah thats the first part
+TODO - potentially add a feature to get all solutions rather than just a solution? it probably wouldn't be much extra
+       work
 """
 import itertools
 import collections
+import random
+from shared_functions import prime_factor_decomposition
 
 
-def prime_decomp(val):
+def get_sols(prime_decomposition_list):
+    """Get list of ints that are definitely within the solution to MinHItSet alg.
+
+    Parameters
+    ----------
+    prime_decomposition_list : list
+        List of lists of prime numbers
+
+    Returns
+    -------
+    list
+        List of unique integers that were previously elements of all sublists in prime_decomposition_list of length 1.
     """
-    reduces an int into its prime factors, returning the int if it is itself prime
-    """
-    divisors = list(set([d if val % d == 0 else val for d in range(2, val//2+1)]))
-    divisors = [d for d in divisors if all(d % od != 0 for od in divisors if od != d)]
-    if val in [2, 3]:
-        divisors = divisors + [val]
-    return divisors
+    sols = [decomposition for decomposition in prime_decomposition_list
+            if len(decomposition) == 1]
+    sols = list(set(itertools.chain(*sols)))
+
+    return sols
 
 
-def prime_list(num_list):
+def get_remaining(
+        prime_decomposition_list,
+        sols,
+):
+    """Get list of all sublists that are yet to be hit by MinHitSet algorithm.
+
+    steps included:
+    1. get all decompositions not covered by sols.
+    2. remove all remaining decompositions that are subsets of other decompositions i.e. [2, 3], [3, 2, 7] -> [3, 2, 7]
+
+    Parameters
+    ----------
+    prime_decomposition_list : list
+        List of lists of prime numbers
+    sols : list
+        List of integers which if present as a list in prime_decomposition_list should be dropped.
+
+    Returns
+    -------
+    list
+        List of lists where each sublist if of length > 1.
     """
-    transforms a list of ints into a list of lists, where each list consists of the
-    prime factors of at least one of the input ints. all duplicates are dropped and
-    any lists which are a sub list of another list are removed, thus reducing the
-    solution space. outputs list of lists still to compute on and list of elelemnts
-    that definately belong in the solution
-    """
-    prime_decomp_lst = [prime_decomp(i) for i in num_list]
-    print(prime_decomp_lst)
-    sols = [i for i in prime_decomp_lst if len(i) == 1]
-    prime_decomp_lst = [i for i in prime_decomp_lst if i not in sols]
-    prime_decomp_sets = [set(l) for l in prime_decomp_lst]
-    prime_decomp_lst = [l for l,s in zip(prime_decomp_lst, prime_decomp_sets) if not any(s < other for other in prime_decomp_sets)]
-    prime_decomp_lst = [list(t) for t in set(map(tuple, prime_decomp_lst))]
-    return [prime_decomp_lst, list(set([i for k in sols for i in k]))]
+    sols = [[i] for i in sols]
+
+    remaining = [decomposition for decomposition in prime_decomposition_list
+                 if decomposition not in sols]
+    remaining_sets = [set(decomposition) for decomposition in remaining]
+
+    remaining = [decomposition_list for decomposition_list, decomposition_set in zip(remaining, remaining_sets)
+                 if not any(decomposition_set < other for other in remaining_sets)]
+
+    return remaining
 
 
-def solution_reduction(list_list, solutions):
+def check_if_solved(
+        remaining,
+        sols,
+):
+    """Check if sols is enough to solve MinHitSet alg.
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    sols : list
+        List of integers that form an at least partial solution to MinHitSet algorithm.
+
+    Returns
+    -------
+    list
+        List of remaining solutions not hit by sols.
     """
-    takes as input the two outputs from prime_list. does some reductions on
-    the first of these two to minimise computation. outputs list of definite solutions,
-    list of lists yet to check and list of elelements that appear only once in the reduced
-    solution space
-    """
-    sols = []
-    solos = []
-    el_list = list(itertools.chain.from_iterable(list_list))
-    counts = collections.Counter(el_list)
-    for i in counts.keys():
-        if counts[i] == len(list_list):
-            sols.append(i)
-            for j in range(len(list_list)):
-                list_list[j] = [k for k in list_list[j] if k != i]
-    del_lst = []
-    for i in range(len(list_list)):
-        if len(list_list[i]) == 2:
-            sub_lst = [j for j in list_list[i] if j not in solutions]
-            if len(sub_lst) == 1:
-                del_lst.append(list_list[i])
-    list_list = [i for i in list_list if i not in del_lst]
-    el_list = list(itertools.chain.from_iterable(list_list))
-    counts = collections.Counter(el_list)
-    for i in counts.keys():
-        if counts[i] == 1:
-            solos.append(i)
-    return [list_list, sols, solos]
+    check = []
+
+    for decomposition in remaining:
+        check.append(any(item in decomposition for item in sols))
+
+    if all(check):
+        return []
+
+    else:
+        indices = [i for i, x in enumerate(check) if x == False]
+        remaining = [remaining[i] for i in indices]
+
+        return remaining
 
 
-def prime_hitting_set(nums):
+def check_for_single_remaining_sol(
+        remaining,
+        sols,
+):
+    """Check if a single additional int is enough to hit the remaining decompositions.
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    sols : list
+        List of integers that form an at least partial solution to MinHitSet algorithm.
+
+    Returns
+    -------
+    list
+        List of integers representing an at least partial solution to MinHitSet. Adds a random element from the
+        available sols in the case where multiple single integers will complete the solution.
     """
-    NP hard problem :O i've written the code to brute force it but first it cunningly
-    reduces the solution space to ensure minimal computations are done. this reduction
-    is a semi farce - im sure there are better more pythonic ways to code it (i.e. less verbose)
-    and im sure that many of these methods would be faster still, however its pretty
-    efficient now and the output seems correct to me so I'll leave it at this for now i think
+    element_list = list(itertools.chain.from_iterable(remaining))
+    counts = collections.Counter(element_list)
+    check = []
+
+    for key, value in counts.items():
+        if value == len(remaining):
+            check.append(key)
+
+    if len(check) > 0:
+        sols.append(random.choice(check))
+
+    return sols
+
+
+def remove_single_elements(remaining):
+    """Remove elements that appear only once in the solution, if they appear in a decomposition containing at least one
+    other element that appears more than once.
+
+    Parameters
+    ---------
+    remaining : list
+        List of lists of prime numbers.
+
+    Returns
+    -------
+    list
+        List of lists of remaining prime factor decompositions, with single elements removed from each sublist.
     """
-    lists = prime_list(nums)
-    reduced_lists, sols = lists[0], lists[1]
-    further_reduced_lists = solution_reduction(reduced_lists, sols)
-    remaining = further_reduced_lists[0]
-    sols = sols + [i for k in further_reduced_lists[1] for i in k]
-    solos = further_reduced_lists[2]
-    # this needs improving:
-    remaining = [[i for i in j] for j in remaining]
-    for i in range(len(remaining)):
-        if len(set(remaining[i]).intersection(sols)) > 0:
-            remaining[i] = [j for j in remaining[i] if j not in sols and j not in solos]
-    remaining = [i for i in remaining if i != [] and len(i) != 1]  # and len(i) != 1
-    potential_solutions = [list(k) for k in itertools.product(*remaining)]
-    potential_solutions = [list(set(k + sols)) for k in potential_solutions]  # + [sols]
-    potential_solutions = sorted(potential_solutions, key=len)
-    minimal_length = len(potential_solutions[0])
-    solutions = [k for k in potential_solutions if len(k) == minimal_length]
-    solutions = [list(t) for t in set(map(tuple, solutions))]
-    return solutions
+    element_list = list(itertools.chain.from_iterable(remaining))
+    counts = collections.Counter(element_list)
+
+    solo_elements = [key for key, value in counts.items()
+                     if value == 1]
+
+    for decomposition in range(len(remaining)):
+        if (
+                any(element in solo_elements for element in remaining[decomposition])
+                and (not all(element in solo_elements for element in remaining[decomposition]))
+        ):
+            remaining[decomposition] = [i for i in remaining[decomposition]
+                                 if i not in solo_elements]
+
+    return remaining
+
+
+def solution_reduction(
+        remaining,
+        sols,
+):
+    """Run the solution space reduction steps on remaining.
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    sols : list
+        List of integers that form an at least partial solution to MinHitSet algorithm.
+
+    Returns
+    -------
+    list
+        List of either lists or ints depending on whether the reduction is enough to solve the algorithm or not.
+    """
+    if len(remaining) == 0:
+        print('MinHitSet complete! solution = {}'.format(sols))
+        return sols
+    else:
+        sols = check_for_single_remaining_sol(remaining, sols)
+        remaining = check_if_solved(remaining, sols)
+
+        if len(remaining) == 0:
+            print('MinHitSet complete! solution = {}'.format(sols))
+            return sols
+        else:
+            remaining = remove_single_elements(remaining)
+            return remaining
+
+
+def hitting_set(
+        remaining,
+        sols,
+):
+    """Run exhaustive MinHitSet algorithm on remaining decompositions.
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    sols : list
+        List of integers that form an at least partial solution to MinHitSet algorithm.
+
+    Returns
+    -------
+    list
+        List of integers forming a solution to the MinHitSet algorithm run on remaining.
+    """
+    partial_hitting_sets = [list(k) for k in itertools.product(*remaining)]
+    hitting_sets = [list(set(k + sols)) for k in partial_hitting_sets]
+    hitting_sets = sorted(hitting_sets, key=len)
+
+    min_hit_set = hitting_sets[0]
+
+    return min_hit_set
+
+
+def minimum_hitting_set_exhaustive(num_list):
+    """Run exhaustive MinPrimeHitSet algorithm.
+
+    Parameters
+    ----------
+    num_list : list
+        List of integers to run the algorithm on
+
+    Returns
+    -------
+    list
+        List of integers that form *a* solution to MinPrimeHitSet for some input list of integers. Multiple solutions
+        may exist and since no seed is set I think it is possible that this could output different lists each time if
+        multiple solutions do exist.
+    """
+    print('\n---| Running Minimum Hitting Set Algorithm |---')
+
+    prime_decomposition_list = [prime_factor_decomposition(i) for i in num_list
+                                if prime_factor_decomposition(i) != []]
+
+    sols = get_sols(prime_decomposition_list)
+
+    remaining = get_remaining(prime_decomposition_list, sols)
+    remaining = check_if_solved(remaining, sols)
+
+    sol_reduction = solution_reduction(remaining, sols)
+
+    if type(sol_reduction[0]) != list:
+        sols = sol_reduction
+        return sols
+    else:
+        remaining = sol_reduction
+        sols = hitting_set(remaining, sols)
+        print('MinHitSet complete! solution = {}'.format(sols))
+        return sols
