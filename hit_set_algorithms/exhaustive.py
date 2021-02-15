@@ -2,7 +2,8 @@
 Complete pipeline for exhaustive solution to minimum hit set problem
 
 TODO - potentially add a feature to get all solutions rather than just a solution? it probably wouldn't be much extra
-       work
+       work...? might actually be due to having to allow for multiple solutions to be passed between functions from a
+       fairly early stage actually - consider the benefit of doing this before attempting it.
 """
 import itertools
 import collections
@@ -31,13 +32,13 @@ def get_sols(prime_decomposition_list):
 
 
 def get_remaining(
-        prime_decomposition_list,
-        sols,
+    prime_decomposition_list,
+    sols,
 ):
-    """Get list of all sublists that are yet to be hit by MinHitSet algorithm.
+    """Get list of all sublists that are not included in the solution directly.
 
     steps included:
-    1. get all decompositions not covered by sols.
+    1. get all decompositions not included in sols.
     2. remove all remaining decompositions that are subsets of other decompositions i.e. [2, 3], [3, 2, 7] -> [3, 2, 7]
 
     Parameters
@@ -65,8 +66,8 @@ def get_remaining(
 
 
 def check_if_solved(
-        remaining,
-        sols,
+    remaining,
+    sols,
 ):
     """Check if sols is enough to solve MinHitSet alg.
 
@@ -98,8 +99,8 @@ def check_if_solved(
 
 
 def check_for_single_remaining_sol(
-        remaining,
-        sols,
+    remaining,
+    sols,
 ):
     """Check if a single additional int is enough to hit the remaining decompositions.
 
@@ -162,8 +163,8 @@ def remove_single_elements(remaining):
 
 
 def solution_reduction(
-        remaining,
-        sols,
+    remaining,
+    sols,
 ):
     """Run the solution space reduction steps on remaining.
 
@@ -180,14 +181,14 @@ def solution_reduction(
         List of either lists or ints depending on whether the reduction is enough to solve the algorithm or not.
     """
     if len(remaining) == 0:
-        print('MinHitSet complete! solution = {}'.format(sols))
+        print('\tMinHitSet complete! solution = {}'.format(sols))
         return sols
     else:
         sols = check_for_single_remaining_sol(remaining, sols)
         remaining = check_if_solved(remaining, sols)
 
         if len(remaining) == 0:
-            print('MinHitSet complete! solution = {}'.format(sols))
+            print('\tMinHitSet complete! solution = {}'.format(sols))
             return sols
         else:
             remaining = remove_single_elements(remaining)
@@ -195,8 +196,8 @@ def solution_reduction(
 
 
 def hitting_set(
-        remaining,
-        sols,
+    remaining,
+    sols,
 ):
     """Run exhaustive MinHitSet algorithm on remaining decompositions.
 
@@ -236,7 +237,7 @@ def minimum_hitting_set_exhaustive(num_list):
         may exist and since no seed is set I think it is possible that this could output different lists each time if
         multiple solutions do exist.
     """
-    print('\n---| Running Minimum Hitting Set Algorithm |---')
+    print('\n---| Running Minimum Hitting Set Algorithm |---\n')
 
     prime_decomposition_list = [prime_factor_decomposition(i) for i in num_list
                                 if prime_factor_decomposition(i) != []]
@@ -254,5 +255,5 @@ def minimum_hitting_set_exhaustive(num_list):
     else:
         remaining = sol_reduction
         sols = hitting_set(remaining, sols)
-        print('MinHitSet complete! solution = {}'.format(sols))
+        print('\tMinHitSet complete! solution = {}'.format(sols))
         return sols
