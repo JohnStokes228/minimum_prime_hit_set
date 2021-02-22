@@ -1,13 +1,19 @@
 """
-All algorithm code will be stored here
+All algorithm code will be stored here. so far includes exhaustive, stochastic and greedy solutions.
 
-TODO - write GA
-     - write stochastic descent?
+TODO - write GA <what will this look like?>
+        - conjure up breeding function / s
+        - conjure up mutation function / s
+        - conjure up method of generating an initial solution <- this is probs easiest to go first?
      - write any other algorithms
+        - multiple stochastic descents using multiprocessing!
+    - consider method of passing optional params to more complicated algs i.e. 'heat' for our descent method
+    - consider method of testing stochastic algs, whose output will be to some extent random
 """
 import itertools
 import collections
 import operator
+import pandas as pd
 from shared_functions import (
     get_sols,
     get_remaining,
@@ -84,6 +90,56 @@ def greedy_hitting_set(
     return sols
 
 
+def stochastic_descent_hitting_set(
+    remaining,
+    sols,
+):
+    """Run stochastic descent MinHitSet algorithm on remaining un hit solutions. The nature of this as a probabilistic
+    method means that it will in all likelihood generate different solutions every time.
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    sols : list
+        List of integers that form an at least partial solution to MinHitSet algorithm.
+
+    Returns
+    -------
+    list
+        List of integers forming a stochastically generated solution to the MinHitSet algorithm run on remaining.
+    """
+    print('\n---| Running Stochastic Descent Minimum Prime Hitting Set Algorithm |---\n')
+
+    element_list = list(itertools.chain.from_iterable(remaining))
+    current_sol = list(set(element_list))
+    current_cost = len(current_sol)
+    cont = True
+    rep = 0
+
+    while cont:
+        counts = pd.DataFrame.from_dict(collections.Counter(element_list), orient='index').reset_index()
+        counts.columns = ['prime', 'count']
+
+        pick = int(counts['prime'].sample(weights=counts['count']))
+        test_sol = [i for i in current_sol if i != pick]
+
+        brakes_hit_set = check_if_solved(remaining, test_sol)
+        if not brakes_hit_set:
+            current_sol = test_sol
+            element_list = [i for i in element_list if i != pick]
+            rep = 0
+        else:
+            rep += 1
+
+        if (current_cost == (len(sols) + 1)) | (rep == 5):
+            cont = False
+
+    final_sol = current_sol + sols
+
+    return final_sol
+
+
 def get_chosen_algorithm(algorithm):
     """Function to return function to run algorithm on.
 
@@ -100,6 +156,7 @@ def get_chosen_algorithm(algorithm):
     algorithms_dict = {
         'exhaustive': exhaustive_hitting_set,
         'greedy': greedy_hitting_set,
+        'stochastic': stochastic_descent_hitting_set,
     }
 
     try:
@@ -121,7 +178,7 @@ def minimum_prime_hitting_set(
     int_list : list
         List of integers to run the algorithm on.
     algorithm : string
-        Pick algorithm to be utilised in solution, takes values of 'exhaustive', 'greedy'.
+        Pick algorithm to be utilised in solution, takes values of 'exhaustive', 'greedy', 'stochastic'.
 
     Returns
     -------
