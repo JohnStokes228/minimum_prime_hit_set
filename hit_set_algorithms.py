@@ -137,6 +137,8 @@ def stochastic_descent_hitting_set(
 
     final_sol = current_sol + sols
 
+    print('\tMinHitSet complete! solution = {}'.format(final_sol))
+
     return final_sol
 
 
