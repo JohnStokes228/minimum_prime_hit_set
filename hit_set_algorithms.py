@@ -6,9 +6,8 @@ TODO - write GA <what will this look like?>
         - conjure up mutation function / s
         - conjure up method of generating an initial solution <- this is probs easiest to go first?
      - write any other algorithms
-        - multiple stochastic descents using multiprocessing!
-    - consider method of passing optional params to more complicated algs i.e. 'heat' for our descent method
-    - consider method of testing stochastic algs, whose output will be to some extent random
+     - consider method of passing optional params to more complicated algs i.e. 'heat' for our descent method
+     - consider method of testing stochastic algs, whose output will be to some extent random
 """
 import itertools
 import collections
@@ -142,6 +141,41 @@ def stochastic_descent_hitting_set(
     return final_sol
 
 
+def genetic_hitting_set(
+    remaining,
+    sols,
+):
+    """Run GA MinHitSet on remaining un hit solutions.
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    sols : list
+        List of integers that form an at least partial solution to MinHitSet algorithm.
+
+    Returns
+    -------
+    list
+        List of integers forming a genetically generated solution to the MinHitSet algorithm run on remaining.
+    """
+    print('\n---| Running Genetic Minimum Prime Hitting Set Algorithm |---\n')
+
+    # generate initial population <- need fast way of generating legit sols
+
+    # find parent candidates <- look for best sols, prehaps still somewhat randomly sample?
+
+    # generate children <- need some method of breeding that will generate legit sols
+
+    # mutate some random sample <- need some method of mutation that will generate legit sols
+
+    # decide whether enough is enough? <- will we set number of iterations first or have some criteria?
+
+    print('\tMinHitSet complete! solution = {}'.format(sols))
+
+    return sols
+
+
 def get_chosen_algorithm(algorithm):
     """Function to return function to run algorithm on.
 
@@ -159,6 +193,7 @@ def get_chosen_algorithm(algorithm):
         'exhaustive': exhaustive_hitting_set,
         'greedy': greedy_hitting_set,
         'stochastic': stochastic_descent_hitting_set,
+        'genetic': genetic_hitting_set,
     }
 
     try:
