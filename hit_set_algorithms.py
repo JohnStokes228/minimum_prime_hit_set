@@ -6,7 +6,9 @@ TODO - write GA <what will this look like?>
         - conjure up mutation function / s
         - conjure up method of generating an initial solution <- this is probs easiest to go first?
      - write any other algorithms
-     - consider method of passing optional params to more complicated algs i.e. 'heat' for our descent method
+     - consider multiprocessed approach to multiple-stochastic alg.
+     - consider method of passing optional params to more complicated algorithms i.e. 'heat' for our descent method,
+     or number_of_iterations for the multiple run algorithms
      - consider method of testing stochastic algs, whose output will be to some extent random
 """
 import itertools
@@ -20,6 +22,30 @@ from shared_functions import (
     check_if_solved,
     solution_reduction,
 )
+
+
+def self_solve_hitting_set(
+    remaining,
+    sols
+):
+    """Output the potentially partial solution generated during the self solve phase of the algorithm.
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    sols : list
+        List of integers that form an at least partial solution to MinHitSet algorithm.
+
+    Returns
+    -------
+    list
+        list of integers forming an at least partial solution to MinHitSet.
+    """
+    print('\n---| Running Self Solving Minimum Prime Hitting Set Algorithm |---\n')
+    print('\tSelf Solve has generated the partial solution = {}'.format(sorted(sols)))
+
+    return sols
 
 
 def exhaustive_hitting_set(
@@ -47,7 +73,7 @@ def exhaustive_hitting_set(
     hitting_sets = sorted(hitting_sets, key=len)
 
     min_hit_set = hitting_sets[0]
-    print('\tMinHitSet complete! solution = {}'.format(min_hit_set))
+    print('\tMinHitSet complete! solution = {}'.format(sorted(min_hit_set)))
 
     return min_hit_set
 
@@ -84,7 +110,7 @@ def greedy_hitting_set(
         if not remaining:
             unsolved = False
 
-    print('\tMinHitSet complete! solution = {}'.format(sols))
+    print('\tMinHitSet complete! solution = {}'.format(sorted(sols)))
 
     return sols
 
@@ -136,9 +162,71 @@ def stochastic_descent_hitting_set(
 
     final_sol = current_sol + sols
 
-    print('\tMinHitSet complete! solution = {}'.format(final_sol))
+    print('\tMinHitSet complete! solution = {}'.format(sorted(final_sol)))
 
     return final_sol
+
+
+def multiple_stochastic_descent_hitting_set(
+    remaining,
+    sols,
+):
+    """Run multiple stochastic descent MinHitSet algorithms on remaining decompositions and take the best value
+
+    TODO - let number_of_iterations be an input
+         - consider a multiprocessed approach
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    sols : list
+        List of integers that form an at least partial solution to MinHitSet algorithm.
+
+    Returns
+    -------
+    list
+        List of integers forming the best stochastically generated solution to the MinHitSet algorithm run on remaining
+        from n runs.
+    """
+    print('\n---| Running Multiple Stochastic Descent Minimum Prime Hitting Set Algorithm |---\n')
+
+    number_of_iterations = 5
+    sols_list = []
+
+    for i in range(number_of_iterations):
+
+        element_list = list(itertools.chain.from_iterable(remaining))
+        current_sol = list(set(element_list))
+        current_cost = len(current_sol)
+        cont = True
+        rep = 0
+
+        while cont:
+            counts = pd.DataFrame.from_dict(collections.Counter(element_list), orient='index').reset_index()
+            counts.columns = ['prime', 'count']
+
+            pick = int(counts['prime'].sample(weights=counts['count']))
+            test_sol = [i for i in current_sol if i != pick]
+
+            brakes_hit_set = check_if_solved(remaining, test_sol)
+            if not brakes_hit_set:
+                current_sol = test_sol
+                element_list = [i for i in element_list if i != pick]
+                rep = 0
+            else:
+                rep += 1
+
+            if (current_cost == (len(sols) + 1)) | (rep == 5):
+                cont = False
+
+        final_sol = current_sol + sols
+        sols_list.append(final_sol)
+
+    best_sol = min(sols_list, key=len)
+    print('\tMinHitSet complete! best solution = {}'.format(sorted(best_sol)))
+
+    return best_sol
 
 
 def genetic_hitting_set(
@@ -171,7 +259,7 @@ def genetic_hitting_set(
 
     # decide whether enough is enough? <- will we set number of iterations first or have some criteria?
 
-    print('\tMinHitSet complete! solution = {}'.format(sols))
+    print('\tMinHitSet complete! solution = {}'.format(sorted(sols)))
 
     return sols
 
@@ -190,9 +278,11 @@ def get_chosen_algorithm(algorithm):
         Uncalled function of desire
     """
     algorithms_dict = {
+        'self-solve': self_solve_hitting_set,
         'exhaustive': exhaustive_hitting_set,
         'greedy': greedy_hitting_set,
         'stochastic': stochastic_descent_hitting_set,
+        'multiple-stochastic': multiple_stochastic_descent_hitting_set,
         'genetic': genetic_hitting_set,
     }
 
@@ -232,7 +322,7 @@ def minimum_prime_hitting_set(
     remaining = check_if_solved(remaining, sols)
     remaining = solution_reduction(remaining, sols)
 
-    if type(remaining[0]) != list:
+    if (type(remaining[0]) != list) and (algorithm != 'self-solve'):
         return remaining
     else:
         try:
