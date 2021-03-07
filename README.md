@@ -31,6 +31,10 @@ The Self-Solve algorithm is the only not generalisable algorithm. It's less of a
 
 Due to the potentially partial nature of the output to this algorithm it will be known from now on as ***SfSP***. It will not be used for comparisons as theres no reason not to run it prior to running any of the other algorithms, and its output will not be an actual solution to the problem in any of the test cases for obvious reasons.
 
+## Random Algorithm (Rand)
+
+The Random algorithm simple generates a list of random permutations of primes present in the decomposition. if any of these end up being actual HitSets then the shortest of them is output as the solution. if None are, then a list of all unique primes present in the decomposition is output instead. 
+
 ## Exhaustive Algorithm (Xstv)
 
 The first meaningful algorithm used to solve the problem is the Exhaustive algorithm (hereon refered to as ***Xstv***). When triggered (As you might expect with such a name), the algorithm exhaustively searches for a minimum solution in the remaining active solution space. As such this algorithm is garunteed to output the correct solution, provided you have enough available RAM to calculate all possibilities, and are willing to wait for this to be done. On small enough solution spaces (though not necessarily small data as we'll see) there's no reason not to use this method to solve the problem. A brief description of the steps involved (after running *SfSP*) is:

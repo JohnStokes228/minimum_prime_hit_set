@@ -4,7 +4,7 @@ All algorithm code will be stored here. so far includes exhaustive, stochastic a
 TODO - write GA <what will this look like?>
         - conjure up breeding function / s
         - conjure up mutation function / s
-        - conjure up method of generating an initial solution <- this is probs easiest to go first?
+        - conjure up method of generating an initial solution <- this is probs going to be the random code?
      - write any other algorithms
      - consider multiprocessed approach to multiple-stochastic alg.
      - consider method of passing optional params to more complicated algorithms i.e. 'heat' for our descent method,
@@ -15,6 +15,7 @@ import itertools
 import collections
 import operator
 import pandas as pd
+import random
 from shared_functions import (
     get_sols,
     get_remaining,
@@ -46,6 +47,45 @@ def self_solve_hitting_set(
     print('\tSelf Solve has generated the partial solution = {}'.format(sorted(sols)))
 
     return sols
+
+
+def randomly_generated_hitting_set(
+    remaining,
+    sols,
+):
+    """Run a chaotic mess of a method to solve MinHitSet on remaining decompositions.
+    legit though, it just generates a number of random sets and sees which if any is the smallest legitimate solution
+    its come up with. If none work, it'll just output a list of every distinct element involved which is a hitset but
+    most likely isn't the minimum one.
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    sols : list
+        List of integers that form an at least partial solution to MinHitSet algorithm.
+
+    Returns
+    -------
+    list
+        list of integers forming an at least partial solution to MinHitSet.
+    """
+    print('\n---| Running Chaotic Random Minimum Prime Hitting Set Algorithm |---\n')
+
+    element_list = list(set(itertools.chain.from_iterable(remaining)))
+
+    potential_sols = [list(set([random.choice(element_list) for i in range(len(element_list))]))
+                      for i in range(len(remaining))]
+    actual_sols = [sol for sol in potential_sols if not check_if_solved(remaining, sol)]
+
+    if len(actual_sols) > 0:
+        best_sol = min(actual_sols, key=len) + sols
+    else:
+        best_sol = element_list + sols
+
+    print('\tMinHitSet complete! solution = {}'.format(sorted(best_sol)))
+
+    return best_sol
 
 
 def exhaustive_hitting_set(
@@ -121,6 +161,8 @@ def stochastic_descent_hitting_set(
 ):
     """Run stochastic descent MinHitSet algorithm on remaining un hit solutions. The nature of this as a probabilistic
     method means that it will in all likelihood generate different solutions every time.
+
+    TODO - consider allowing worsening steps with some decreasing probability to increase the coverage of the alg?
 
     Parameters
     ----------
@@ -249,7 +291,7 @@ def genetic_hitting_set(
     """
     print('\n---| Running Genetic Minimum Prime Hitting Set Algorithm |---\n')
 
-    # generate initial population <- need fast way of generating legit sols
+    initial_population = []
 
     # find parent candidates <- look for best sols, prehaps still somewhat randomly sample?
 
@@ -279,6 +321,7 @@ def get_chosen_algorithm(algorithm):
     """
     algorithms_dict = {
         'self-solve': self_solve_hitting_set,
+        'random': randomly_generated_hitting_set,
         'exhaustive': exhaustive_hitting_set,
         'greedy': greedy_hitting_set,
         'stochastic': stochastic_descent_hitting_set,
