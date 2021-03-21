@@ -5,6 +5,7 @@ MinHitSet solution, and in part due to the codes current decision to pick to ret
 there are multiple, which is not infrequent for larger input lists. I use assertCountEqual over assertListEqual in most
 cases as order is arbitrary and irrelevant.
 
+TODO - GA unit tests - legit this one needs testing fo sho
 """
 from hit_set_algorithms import (
     exhaustive_hitting_set,

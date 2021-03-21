@@ -39,20 +39,27 @@ def prime_factor_decomposition(val):
         return []
 
 
-def get_prime_decomposition_list(int_list):
+def get_prime_decomposition_list(
+    int_list,
+    text,
+):
     """Break a list of integers down into their unique prime factors
 
     Parameters
     ----------
     int_list : list
         List of integers to factorise.
+    text : bool
+        Set False to avoid printing any statements
 
     Returns
     -------
     list
         List of prime factor decompositions for input list.
     """
-    print('\ndecomposing input integers...\n')
+    if text:
+        print('\ndecomposing input integers...\n')
+
     prime_decomposition_list = [prime_factor_decomposition(i) for i in int_list
                                 if prime_factor_decomposition(i) != []]
 
@@ -213,6 +220,7 @@ def remove_single_elements(remaining):
 def solution_reduction(
     remaining,
     sols,
+    text,
 ):
     """Run the solution space reduction steps on remaining.
 
@@ -222,23 +230,28 @@ def solution_reduction(
         List of lists of remaining decompositions to check if sols hit.
     sols : list
         List of integers that form an at least partial solution to MinHitSet algorithm.
+    text : bool
+        Set False to avoid printing any statements
 
     Returns
     -------
     list
         List of either lists or ints depending on whether the reduction is enough to solve the algorithm or not.
     """
-    print('checking if problem solved without need for chosen algorithm...\n')
+    if text:
+        print('checking if problem solved without need for chosen algorithm...\n')
 
     if len(remaining) == 0:
-        print('\tMinHitSet complete! solution = {}'.format(sols))
+        if text:
+            print('\tMinHitSet complete! solution = {}'.format(sols))
         return sols
     else:
         sols = check_for_single_remaining_sol(remaining, sols)
         remaining = check_if_solved(remaining, sols)
 
         if len(remaining) == 0:
-            print('\tMinHitSet complete! solution = {}'.format(sols))
+            if text:
+                print('\tMinHitSet complete! solution = {}'.format(sols))
             return sols
         else:
             remaining = remove_single_elements(remaining)

@@ -1,14 +1,10 @@
 """
 All algorithm code will be stored here. so far includes exhaustive, stochastic and greedy solutions.
 
-TODO - write GA <what will this look like?>
-        - conjure up breeding function / s
-        - conjure up mutation function / s
-        - conjure up method of generating an initial solution <- this is probs going to be the random code?
-     - write any other algorithms
+TODO - write any other algorithms
      - consider multiprocessed approach to multiple-stochastic alg.
-     - consider method of passing optional params to more complicated algorithms i.e. 'heat' for our descent method,
-     or number_of_iterations for the multiple run algorithms
+     - *consider method of passing optional params to more complicated algorithms i.e. 'heat' for our descent method,
+     or number_of_iterations for the multiple run algorithms*
      - consider method of testing stochastic algs, whose output will be to some extent random
 """
 import itertools
@@ -16,6 +12,7 @@ import collections
 import operator
 import pandas as pd
 import random
+from math import floor
 from shared_functions import (
     get_sols,
     get_remaining,
@@ -52,6 +49,7 @@ def self_solve_hitting_set(
 def randomly_generated_hitting_set(
     remaining,
     sols,
+    text,
 ):
     """Run a chaotic mess of a method to solve MinHitSet on remaining decompositions.
     legit though, it just generates a number of random sets and sees which if any is the smallest legitimate solution
@@ -64,13 +62,16 @@ def randomly_generated_hitting_set(
         List of lists of remaining decompositions to check if sols hit.
     sols : list
         List of integers that form an at least partial solution to MinHitSet algorithm.
+    text : bool
+        Set False to avoid printing any statements
 
     Returns
     -------
     list
         list of integers forming an at least partial solution to MinHitSet.
     """
-    print('\n---| Running Chaotic Random Minimum Prime Hitting Set Algorithm |---\n')
+    if text:
+        print('\n---| Running Chaotic Random Minimum Prime Hitting Set Algorithm |---\n')
 
     element_list = list(set(itertools.chain.from_iterable(remaining)))
 
@@ -83,7 +84,8 @@ def randomly_generated_hitting_set(
     else:
         best_sol = element_list + sols
 
-    print('\tMinHitSet complete! solution = {}'.format(sorted(best_sol)))
+    if text:
+        print('\tMinHitSet complete! solution = {}'.format(sorted(best_sol)))
 
     return best_sol
 
@@ -91,6 +93,7 @@ def randomly_generated_hitting_set(
 def exhaustive_hitting_set(
     remaining,
     sols,
+    text,
 ):
     """Run exhaustive MinHitSet algorithm on remaining decompositions.
 
@@ -100,20 +103,25 @@ def exhaustive_hitting_set(
         List of lists of remaining decompositions to check if sols hit.
     sols : list
         List of integers that form an at least partial solution to MinHitSet algorithm.
+    text : bool
+        Set False to avoid printing any statements
 
     Returns
     -------
     list
         List of integers forming a solution to the MinHitSet algorithm run on remaining.
     """
-    print('\n---| Running Exhaustive Minimum Prime Hitting Set Algorithm |---\n')
+    if text:
+        print('\n---| Running Exhaustive Minimum Prime Hitting Set Algorithm |---\n')
 
     partial_hitting_sets = [list(k) for k in itertools.product(*remaining)]
     hitting_sets = [list(set(k + sols)) for k in partial_hitting_sets]
     hitting_sets = sorted(hitting_sets, key=len)
 
     min_hit_set = hitting_sets[0]
-    print('\tMinHitSet complete! solution = {}'.format(sorted(min_hit_set)))
+
+    if text:
+        print('\tMinHitSet complete! solution = {}'.format(sorted(min_hit_set)))
 
     return min_hit_set
 
@@ -121,6 +129,7 @@ def exhaustive_hitting_set(
 def greedy_hitting_set(
     remaining,
     sols,
+    text,
 ):
     """Run Greedy MinHitSet heuristic on remaining un hit solutions.
 
@@ -130,13 +139,16 @@ def greedy_hitting_set(
         List of lists of remaining decompositions to check if sols hit.
     sols : list
         List of integers that form an at least partial solution to MinHitSet algorithm.
+    text : bool
+        Set False to avoid printing any statements
 
     Returns
     -------
     list
         List of integers forming a potential (greedy) solution to the MinHitSet algorithm run on remaining.
     """
-    print('\n---| Running Greedy Minimum Prime Hitting Set Heuristic |---\n')
+    if text:
+        print('\n---| Running Greedy Minimum Prime Hitting Set Heuristic |---\n')
 
     unsolved = True
     while unsolved:
@@ -150,7 +162,8 @@ def greedy_hitting_set(
         if not remaining:
             unsolved = False
 
-    print('\tMinHitSet complete! solution = {}'.format(sorted(sols)))
+    if text:
+        print('\tMinHitSet complete! solution = {}'.format(sorted(sols)))
 
     return sols
 
@@ -158,6 +171,7 @@ def greedy_hitting_set(
 def stochastic_descent_hitting_set(
     remaining,
     sols,
+    text,
 ):
     """Run stochastic descent MinHitSet algorithm on remaining un hit solutions. The nature of this as a probabilistic
     method means that it will in all likelihood generate different solutions every time.
@@ -170,13 +184,16 @@ def stochastic_descent_hitting_set(
         List of lists of remaining decompositions to check if sols hit.
     sols : list
         List of integers that form an at least partial solution to MinHitSet algorithm.
+    text : bool
+        Set False to avoid printing any statements
 
     Returns
     -------
     list
         List of integers forming a stochastically generated solution to the MinHitSet algorithm run on remaining.
     """
-    print('\n---| Running Stochastic Descent Minimum Prime Hitting Set Algorithm |---\n')
+    if text:
+        print('\n---| Running Stochastic Descent Minimum Prime Hitting Set Algorithm |---\n')
 
     element_list = list(itertools.chain.from_iterable(remaining))
     current_sol = list(set(element_list))
@@ -204,7 +221,8 @@ def stochastic_descent_hitting_set(
 
     final_sol = current_sol + sols
 
-    print('\tMinHitSet complete! solution = {}'.format(sorted(final_sol)))
+    if text:
+        print('\tMinHitSet complete! solution = {}'.format(sorted(final_sol)))
 
     return final_sol
 
@@ -212,6 +230,7 @@ def stochastic_descent_hitting_set(
 def multiple_stochastic_descent_hitting_set(
     remaining,
     sols,
+    text,
 ):
     """Run multiple stochastic descent MinHitSet algorithms on remaining decompositions and take the best value
 
@@ -224,6 +243,8 @@ def multiple_stochastic_descent_hitting_set(
         List of lists of remaining decompositions to check if sols hit.
     sols : list
         List of integers that form an at least partial solution to MinHitSet algorithm.
+    text : bool
+        Set False to avoid printing any statements
 
     Returns
     -------
@@ -231,7 +252,8 @@ def multiple_stochastic_descent_hitting_set(
         List of integers forming the best stochastically generated solution to the MinHitSet algorithm run on remaining
         from n runs.
     """
-    print('\n---| Running Multiple Stochastic Descent Minimum Prime Hitting Set Algorithm |---\n')
+    if text:
+        print('\n---| Running Multiple Stochastic Descent Minimum Prime Hitting Set Algorithm |---\n')
 
     number_of_iterations = 5
     sols_list = []
@@ -266,14 +288,125 @@ def multiple_stochastic_descent_hitting_set(
         sols_list.append(final_sol)
 
     best_sol = min(sols_list, key=len)
-    print('\tMinHitSet complete! best solution = {}'.format(sorted(best_sol)))
+
+    if text:
+        print('\tMinHitSet complete! best solution = {}'.format(sorted(best_sol)))
 
     return best_sol
+
+
+def generate_initial_population(
+    remaining,
+    included_sols=[],
+    attempted_population_size=50,
+):
+    """Generates an initial population of solution to MinHitSet to feed the GA.
+
+    Parameters
+    ----------
+    remaining : list
+        List of lists of remaining decompositions to check if sols hit.
+    included_sols : list
+        List of solutions to be definitely included in the initial population.
+    attempted_population_size : int
+        Number of attempts at generating a legitimate solution.
+
+    Returns
+    -------
+    list
+        list of solutions to MinHitSet.
+    """
+    element_list = list(set(itertools.chain.from_iterable(remaining)))
+
+    initial_population = [list(set([random.choice(element_list) for i in range(len(element_list))]))
+                          for i in range(attempted_population_size)]
+    initial_population = [sol for sol in initial_population if not check_if_solved(remaining, sol)]
+    if initial_population:
+        initial_population = sorted(initial_population, key=len)
+    else:
+        initial_population = [element_list]
+
+    return initial_population + included_sols
+
+
+def get_parents(
+    initial_population,
+    number_of_breeding_pairs=10,
+):
+    """Pick parents from initial population, using weighted sampling with replacement.
+
+    Parameters
+    ----------
+    initial_population : list
+        List of solutions to MinHitSet problem.
+    number_of_breeding_pairs : int
+        Number of pairs of parents desired
+
+    Returns
+    -------
+    list
+        List of parents chosen.
+    """
+    initial_population_size = len(initial_population)
+
+    weight_widths = int(initial_population_size / 3)
+    weights = [1, 2, 3] * weight_widths
+    weights = weights[:len(initial_population)]
+
+    parents = random.choices(sorted(initial_population, key=len), weights=weights, k=number_of_breeding_pairs)
+    parents = [parents[:number_of_breeding_pairs], parents[number_of_breeding_pairs:]]
+
+    return parents
+
+
+def breed_sols(parents):
+    """Breeding function to generate new solutions out of presumably decent ones
+
+    Parameters
+    ----------
+    parents : list
+        List of two equally long lists, which will be the 'mother' and 'father' of the breeding alg.
+
+    Returns
+    -------
+    list
+        List of children that may or may not be solutions to MinHitSet.
+    """
+    children = []
+
+    for i in len(parents[0]):
+        left_sample_size = random.sample(range(len(parents[0][i])))
+        right_sample_size = random.sample(range(len(parents[1][i])))
+
+        child = random.sample(parents[0][i], left_sample_size) + random.sample(parents[1][i], right_sample_size)
+        children.append(list(set(child)))
+
+    return children
+
+
+def mutate_sols(mutation_candidates):
+    """Apply mutation function to the selected candidates.
+
+    Parameters
+    ----------
+    mutation_candidates : list
+        List of lists where each sublist is a potential solution of MinHitSet that will be mutated.
+
+    Returns
+    -------
+    list
+        List of lists where each sublist is a mutated form of one of the input sublists.
+    """
+    for candidate in mutation_candidates:
+        candidate.remove(random.choice(candidate))
+
+    return mutation_candidates
 
 
 def genetic_hitting_set(
     remaining,
     sols,
+    text,
 ):
     """Run GA MinHitSet on remaining un hit solutions.
 
@@ -283,25 +416,42 @@ def genetic_hitting_set(
         List of lists of remaining decompositions to check if sols hit.
     sols : list
         List of integers that form an at least partial solution to MinHitSet algorithm.
+    text : bool
+        Set False to avoid printing any statements
 
     Returns
     -------
     list
         List of integers forming a genetically generated solution to the MinHitSet algorithm run on remaining.
     """
-    print('\n---| Running Genetic Minimum Prime Hitting Set Algorithm |---\n')
+    if text:
+        print('\n---| Running Genetic Minimum Prime Hitting Set Algorithm |---\n')
 
-    initial_population = []
+    initial_population = generate_initial_population(remaining)
 
-    # find parent candidates <- look for best sols, prehaps still somewhat randomly sample?
+    best_sol = min(initial_population, key=len) + sols  # current best, to be iterated on
+    changed = 0
 
-    # generate children <- need some method of breeding that will generate legit sols
+    while changed < 3:
+        parents = get_parents(initial_population)
+        children = breed_sols(parents)
+        mutants = mutate_sols(random.sample(initial_population + children), 20)
 
-    # mutate some random sample <- need some method of mutation that will generate legit sols
+        initial_population += children + mutants
+        initial_population = [sol for sol in initial_population if not check_if_solved(remaining, sol)]
+        initial_population = sorted(initial_population, key=len)
+        initial_population = initial_population[:floor(len(initial_population)/10)]
 
-    # decide whether enough is enough? <- will we set number of iterations first or have some criteria?
+        new_best_sol = min(initial_population, key=len)
 
-    print('\tMinHitSet complete! solution = {}'.format(sorted(sols)))
+        if len(new_best_sol) == len(best_sol):
+            changed += 1
+        else:
+            changed = 0
+            best_sol = new_best_sol
+
+    if text:
+        print('\tMinHitSet complete! solution = {}'.format(sorted(sols)))
 
     return sols
 
@@ -338,8 +488,9 @@ def get_chosen_algorithm(algorithm):
 
 
 def minimum_prime_hitting_set(
-        int_list,
-        algorithm='exhaustive',
+    int_list,
+    algorithm='exhaustive',
+    text=True,
 ):
     """Run MinPrimeHitSet algorithm.
 
@@ -349,6 +500,8 @@ def minimum_prime_hitting_set(
         List of integers to run the algorithm on.
     algorithm : string
         Pick algorithm to be utilised in solution, takes values of 'exhaustive', 'greedy', 'stochastic'.
+    text : bool
+        Set False to avoid printing any statements throughout.
 
     Returns
     -------
@@ -357,19 +510,19 @@ def minimum_prime_hitting_set(
         may exist and since no seed is set I think it is possible that this could output different lists each time if
         multiple solutions do exist. Returns None if no valid algorithm is selected
     """
-    prime_decomposition_list = get_prime_decomposition_list(int_list)
+    prime_decomposition_list = get_prime_decomposition_list(int_list, text)
 
     sols = get_sols(prime_decomposition_list)
 
     remaining = get_remaining(prime_decomposition_list, sols)
     remaining = check_if_solved(remaining, sols)
-    remaining = solution_reduction(remaining, sols)
+    remaining = solution_reduction(remaining, sols, text)
 
     if (type(remaining[0]) != list) and (algorithm != 'self-solve'):
         return remaining
     else:
         try:
-            sols = get_chosen_algorithm(algorithm)(remaining, sols)
+            sols = get_chosen_algorithm(algorithm)(remaining, sols, text)
             return sols
         except TypeError:
             print('partial solution = {}'.format(sols))
