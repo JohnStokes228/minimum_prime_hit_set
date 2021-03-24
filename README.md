@@ -86,4 +86,16 @@ The next stochastic method is a simple expansion on the first, in which you run 
 
 ## Genetic Algorithm (GenA)
 
-Doesnt exist yet lol. bet it'll be crap after all this mind you 
+An unnecessary algorithm i coded up just for the fun of it. The steps post self solve are as follows:
+
+<br>j = 0
+- generate i initial solutions at random
+- using solution length as weights, pick 2n solutions with replacement to serve as parents
+- take a random number of elements from each parent and combine them to form a child
+- pick m random solutions and remove an element from each at random, to mutate it
+- check the length of the shortest current solution. 
+    - if shorter than the previous shortest, continue
+    - else j += 1
+- if j = 3:
+<br>**END**
+    

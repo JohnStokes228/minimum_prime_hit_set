@@ -6,6 +6,7 @@ TODO - write any other algorithms
      - *consider method of passing optional params to more complicated algorithms i.e. 'heat' for our descent method,
      or number_of_iterations for the multiple run algorithms*
      - consider method of testing stochastic algs, whose output will be to some extent random
+     - ***the fucking piece of shit genetic algorithm is misbehaving for unknown reasons it needs fixing***
 """
 import itertools
 import collections
@@ -297,7 +298,6 @@ def multiple_stochastic_descent_hitting_set(
 
 def generate_initial_population(
     remaining,
-    included_sols=[],
     attempted_population_size=50,
 ):
     """Generates an initial population of solution to MinHitSet to feed the GA.
@@ -306,8 +306,6 @@ def generate_initial_population(
     ----------
     remaining : list
         List of lists of remaining decompositions to check if sols hit.
-    included_sols : list
-        List of solutions to be definitely included in the initial population.
     attempted_population_size : int
         Number of attempts at generating a legitimate solution.
 
@@ -321,12 +319,13 @@ def generate_initial_population(
     initial_population = [list(set([random.choice(element_list) for i in range(len(element_list))]))
                           for i in range(attempted_population_size)]
     initial_population = [sol for sol in initial_population if not check_if_solved(remaining, sol)]
+
     if initial_population:
         initial_population = sorted(initial_population, key=len)
     else:
         initial_population = [element_list]
 
-    return initial_population + included_sols
+    return [sol for sol in initial_population if not check_if_solved(remaining, sol)]
 
 
 def get_parents(
@@ -350,10 +349,10 @@ def get_parents(
     initial_population_size = len(initial_population)
 
     weight_widths = int(initial_population_size / 3)
-    weights = [1, 2, 3] * weight_widths
+    weights = [1, 2, 3] * (weight_widths + 1)
     weights = weights[:len(initial_population)]
 
-    parents = random.choices(sorted(initial_population, key=len), weights=weights, k=number_of_breeding_pairs)
+    parents = random.choices(sorted(initial_population, key=len), weights=weights, k=(2*number_of_breeding_pairs))
     parents = [parents[:number_of_breeding_pairs], parents[number_of_breeding_pairs:]]
 
     return parents
@@ -374,14 +373,14 @@ def breed_sols(parents):
     """
     children = []
 
-    for i in len(parents[0]):
-        left_sample_size = random.sample(range(len(parents[0][i])))
-        right_sample_size = random.sample(range(len(parents[1][i])))
+    for i in range(len(parents[0])):
+        left_sample_size = random.sample(range(1, len(parents[0][i])), k=1)
+        right_sample_size = random.sample(range(1, len(parents[1][i])), k=1)
 
-        child = random.sample(parents[0][i], left_sample_size) + random.sample(parents[1][i], right_sample_size)
+        child = random.sample(parents[0][i], k=left_sample_size[0]) + random.sample(parents[1][i], k=right_sample_size[0])
         children.append(list(set(child)))
 
-    return children
+    return [child for child in children if child]
 
 
 def mutate_sols(mutation_candidates):
@@ -397,10 +396,12 @@ def mutate_sols(mutation_candidates):
     list
         List of lists where each sublist is a mutated form of one of the input sublists.
     """
-    for candidate in mutation_candidates:
-        candidate.remove(random.choice(candidate))
+    mutants = []
 
-    return mutation_candidates
+    for candidate in mutation_candidates:
+        mutants.append(random.sample(candidate, k=(len(candidate)-1)))
+
+    return [mutant for mutant in mutation_candidates if mutant]
 
 
 def genetic_hitting_set(
@@ -429,26 +430,31 @@ def genetic_hitting_set(
 
     initial_population = generate_initial_population(remaining)
 
-    best_sol = min(initial_population, key=len) + sols  # current best, to be iterated on
+    best_sol = min(initial_population, key=len)  # current best, to be iterated on
     changed = 0
 
     while changed < 3:
         parents = get_parents(initial_population)
         children = breed_sols(parents)
-        mutants = mutate_sols(random.sample(initial_population + children), 20)
+        try:
+            mutants = mutate_sols(random.choices(initial_population + children, k=20))
+        except IndexError:
+            mutants = []
+        finally:
+            initial_population = initial_population + children + mutants
+            initial_population = [sol for sol in initial_population if not check_if_solved(remaining, sol) and sol]
+            initial_population = sorted(initial_population, key=len)
+            initial_population = initial_population[floor(len(initial_population)/10):]
 
-        initial_population += children + mutants
-        initial_population = [sol for sol in initial_population if not check_if_solved(remaining, sol)]
-        initial_population = sorted(initial_population, key=len)
-        initial_population = initial_population[:floor(len(initial_population)/10)]
+            new_best_sol = min(initial_population, key=len)
 
-        new_best_sol = min(initial_population, key=len)
+            if len(new_best_sol) >= len(best_sol):
+                changed += 1
+            else:
+                changed = 0
+                best_sol = new_best_sol
 
-        if len(new_best_sol) == len(best_sol):
-            changed += 1
-        else:
-            changed = 0
-            best_sol = new_best_sol
+    sols = sols + best_sol
 
     if text:
         print('\tMinHitSet complete! solution = {}'.format(sorted(sols)))
