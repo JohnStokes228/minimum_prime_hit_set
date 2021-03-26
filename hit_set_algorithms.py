@@ -6,7 +6,6 @@ TODO - write any other algorithms
      - *consider method of passing optional params to more complicated algorithms i.e. 'heat' for our descent method,
      or number_of_iterations for the multiple run algorithms*
      - consider method of testing stochastic algs, whose output will be to some extent random
-     - ***the fucking piece of shit genetic algorithm is misbehaving for unknown reasons it needs fixing***
 """
 import itertools
 import collections
